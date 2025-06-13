@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react"
 import { useAuth } from "./auth-context"
+import { StorageManager } from "./utils/storage-manager"
 import type { Profile, ProfileAnalysis, PsychologicalInsight } from "./profile-types"
 
 interface ProfileContextType {
@@ -38,31 +39,37 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const storage = StorageManager.getInstance()
 
-  // Load profiles from localStorage on mount
+  // Load profiles from storage on mount
   useEffect(() => {
-    if (user) {
-      const savedProfiles = localStorage.getItem(`profiles_${user.id}`)
-      if (savedProfiles) {
-        try {
-          setProfiles(JSON.parse(savedProfiles))
-        } catch (error) {
-          console.error("Error parsing profiles:", error)
-          setProfiles([])
+    const load = async () => {
+      if (user) {
+        const savedProfiles = await storage.getItem<Profile[]>(`profiles_${user.id}`)
+        if (savedProfiles) {
+          try {
+            setProfiles(savedProfiles)
+          } catch (error) {
+            console.error("Error parsing profiles:", error)
+            setProfiles([])
+          }
         }
       }
     }
+    load()
   }, [user])
 
-  // Save profiles to localStorage whenever they change
+  // Save profiles to storage whenever they change
   useEffect(() => {
-    if (user) {
-      try {
-        localStorage.setItem(`profiles_${user.id}`, JSON.stringify(profiles))
-      } catch (error) {
-        console.error("Error saving profiles to localStorage:", error)
+    const save = async () => {
+      if (user) {
+        const success = await storage.setItem(`profiles_${user.id}`, profiles)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
       }
     }
+    save()
   }, [profiles, user])
 
   const createProfile = useCallback(

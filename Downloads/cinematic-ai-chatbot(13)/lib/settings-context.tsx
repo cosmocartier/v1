@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import type { ApplicationSettings, SettingsContextType } from "./settings-types"
+import { StorageManager } from "./utils/storage-manager"
 
 // Default settings
 const defaultSettings: ApplicationSettings = {
@@ -111,18 +112,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+  const storage = StorageManager.getInstance()
 
-  // Load settings from localStorage on mount
+  // Load settings from storage on mount
   useEffect(() => {
-    const loadSettings = () => {
+    const loadSettings = async () => {
       try {
-        const savedSettings = localStorage.getItem("appSettings")
+        const savedSettings = await storage.getItem<ApplicationSettings>("appSettings")
         if (savedSettings) {
-          setSettings(JSON.parse(savedSettings))
+          setSettings(savedSettings)
         }
       } catch (error) {
         console.error("Failed to load settings:", error)
-        // If loading fails, use default settings
         setSettings(defaultSettings)
       } finally {
         setIsLoading(false)
@@ -132,16 +133,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     loadSettings()
   }, [])
 
-  // Save settings to localStorage when they change
+  // Save settings to storage when they change
   const saveSettings = async (newSettings: ApplicationSettings) => {
-    try {
-      localStorage.setItem("appSettings", JSON.stringify(newSettings))
-      setHasUnsavedChanges(false)
-      return true
-    } catch (error) {
-      console.error("Failed to save settings:", error)
+    const success = await storage.setItem("appSettings", newSettings)
+    if (!success) {
+      await storage.performMaintenance("local")
       return false
     }
+    setHasUnsavedChanges(false)
+    return true
   }
 
   // Update a specific section of settings

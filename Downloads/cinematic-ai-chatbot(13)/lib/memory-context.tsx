@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useAuth } from "./auth-context"
+import { StorageManager } from "./utils/storage-manager"
 import type { Memory, MemoryAttachment, MemorySearchFilters, MemoryStats } from "./memory-types"
 
 interface MemoryContextType {
@@ -50,34 +51,39 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [memories, setMemories] = useState<Memory[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const storage = StorageManager.getInstance()
 
-  // Load memories from localStorage on mount
+  // Load memories from storage on mount
   useEffect(() => {
-    if (user) {
-      try {
-        const savedMemories = localStorage.getItem(`memories_${user.id}`)
-        if (savedMemories) {
-          const parsedMemories = JSON.parse(savedMemories)
-          setMemories(parsedMemories)
+    const load = async () => {
+      if (user) {
+        try {
+          const savedMemories = await storage.getItem<Memory[]>(`memories_${user.id}`)
+          if (savedMemories) {
+            setMemories(savedMemories)
+          }
+        } catch (error) {
+          console.error("Error loading memories:", error)
+          setMemories([])
         }
-      } catch (error) {
-        console.error("Error loading memories:", error)
+      } else {
         setMemories([])
       }
-    } else {
-      setMemories([])
     }
+    load()
   }, [user])
 
-  // Save memories to localStorage whenever they change
+  // Save memories to storage whenever they change
   useEffect(() => {
-    if (user && memories.length >= 0) {
-      try {
-        localStorage.setItem(`memories_${user.id}`, JSON.stringify(memories))
-      } catch (error) {
-        console.error("Error saving memories:", error)
+    const save = async () => {
+      if (user && memories.length >= 0) {
+        const success = await storage.setItem(`memories_${user.id}`, memories)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
       }
     }
+    save()
   }, [memories, user])
 
   // Memory CRUD operations

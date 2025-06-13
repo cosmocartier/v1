@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { useAuth } from "./auth-context"
+import { StorageManager } from "./utils/storage-manager"
 
 export interface ChatMessage {
   id: string
@@ -84,14 +85,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
+  const storage = StorageManager.getInstance()
 
-  // Load sessions from localStorage on mount
+  // Load sessions from storage on mount
   useEffect(() => {
-    if (user) {
-      try {
-        const savedSessions = localStorage.getItem(`me-sessions-${user.id}`)
-        if (savedSessions) {
-          const parsedSessions = JSON.parse(savedSessions).map((session: any) => ({
+    const load = async () => {
+      if (user) {
+        try {
+          const savedSessions = await storage.getItem<any[]>(`me-sessions-${user.id}`)
+          if (savedSessions) {
+            const parsedSessions = savedSessions.map((session: any) => ({
             ...session,
             createdAt: new Date(session.createdAt),
             updatedAt: new Date(session.updatedAt),
@@ -106,33 +109,37 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             activeStrategicItemId: session.activeStrategicItemId,
             activeStrategicItemType: session.activeStrategicItemType,
           }))
-          setSessions(parsedSessions)
+            setSessions(parsedSessions)
 
-          // Auto-load the most recent session if no current session
-          if (parsedSessions.length > 0 && !currentSession) {
-            setCurrentSession(parsedSessions[0])
+            // Auto-load the most recent session if no current session
+            if (parsedSessions.length > 0 && !currentSession) {
+              setCurrentSession(parsedSessions[0])
+            }
           }
+        } catch (error) {
+          console.error("Error loading sessions:", error)
+          setSessions([])
         }
-      } catch (error) {
-        console.error("Error loading sessions:", error)
+      } else {
         setSessions([])
+        setCurrentSession(null)
       }
-    } else {
-      setSessions([])
-      setCurrentSession(null)
+      setIsLoading(false)
     }
-    setIsLoading(false)
+    load()
   }, [user])
 
-  // Save sessions to localStorage whenever sessions change
+  // Save sessions to storage whenever sessions change
   useEffect(() => {
-    if (user) {
-      try {
-        localStorage.setItem(`me-sessions-${user.id}`, JSON.stringify(sessions))
-      } catch (error) {
-        console.error("Error saving sessions:", error)
+    const save = async () => {
+      if (user) {
+        const success = await storage.setItem(`me-sessions-${user.id}`, sessions)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
       }
     }
+    save()
   }, [sessions, user])
 
   const generateSessionSummary = useCallback((messages: ChatMessage[]): string => {
