@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js"
 
+// NOTE: This file is intentionally the *only* place in the codebase where
+// `createClient` from `@supabase/supabase-js` should be invoked. The
+// application relies on this singleton to avoid multiple Supabase client
+// instances which can lead to subtle bugs in development.
+
 // Validate environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -17,6 +22,11 @@ let supabaseInstance: ReturnType<typeof createClient> | null = null
 
 const createSupabaseClient = () => {
   if (supabaseInstance) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "createSupabaseClient called multiple times; returning existing singleton instance"
+      )
+    }
     return supabaseInstance
   }
 
