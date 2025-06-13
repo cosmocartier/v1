@@ -20,7 +20,7 @@ export function GraphStressTester({ onDataGenerated, onReset }: StressTesterProp
   const [connectionDensity, setConnectionDensity] = useState([0.3])
   const [lastGenerated, setLastGenerated] = useState<{ nodes: number; links: number } | null>(null)
 
-  // Helper function as arrow function to avoid 'this' context issues
+  // Determine whether the target node is exactly one level below the source node
   const isHierarchicalConnection = (sourceType: string, targetType: string): boolean => {
     const hierarchy = ["initiative", "operation", "milestone", "task"]
     const sourceLevel = hierarchy.indexOf(sourceType)
