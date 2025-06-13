@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { useAuth } from "./auth-context"
+import { StorageManager } from "./utils/storage-manager"
 import { useStrategic } from "./strategic-context"
 import {
   NOTIFICATION_TEMPLATES,
@@ -76,6 +77,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [previousData, setPreviousData] = useState<any>(null)
+  const storage = StorageManager.getInstance()
 
   // Calculate unread count
   const unreadCount = notifications.filter((n) => n.status === "unread").length
@@ -109,10 +111,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
 
       // In a real app, this would be an API call
-      const stored = localStorage.getItem(`notifications_${user.id}`)
+      const stored = await storage.getItem<any[]>(`notifications_${user.id}`)
       if (stored) {
-        const parsed = JSON.parse(stored)
-        const notifications = parsed.map((n: any) => ({
+        const notifications = stored.map((n: any) => ({
           ...n,
           timestamp: new Date(n.timestamp),
           readAt: n.readAt ? new Date(n.readAt) : undefined,
@@ -133,13 +134,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!user) return
 
     try {
-      const stored = localStorage.getItem(`notification_preferences_${user.id}`)
+      const stored = await storage.getItem<NotificationPreferences>(`notification_preferences_${user.id}`)
       if (stored) {
-        setPreferences(JSON.parse(stored))
+        setPreferences(stored)
       } else {
         const defaultPrefs = { ...DEFAULT_PREFERENCES, userId: user.id }
         setPreferences(defaultPrefs)
-        localStorage.setItem(`notification_preferences_${user.id}`, JSON.stringify(defaultPrefs))
+        await storage.setItem(`notification_preferences_${user.id}`, defaultPrefs)
       }
     } catch (error) {
       console.error("Failed to load preferences:", error)
@@ -150,9 +151,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // Save notifications to storage
   const saveNotifications = useCallback(
-    (notifications: Notification[]) => {
+    async (notifications: Notification[]) => {
       if (!user) return
-      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(notifications))
+      const success = await storage.setItem(`notifications_${user.id}`, notifications)
+      if (!success) {
+        await storage.performMaintenance("local")
+      }
     },
     [user],
   )
@@ -408,16 +412,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // Update preferences
   const updatePreferences = useCallback(
-    (newPreferences: Partial<NotificationPreferences>) => {
+    async (newPreferences: Partial<NotificationPreferences>) => {
       if (!user) return
 
       setPreferences((prev) => {
         if (!prev) return null
 
         const updated = { ...prev, ...newPreferences }
-        localStorage.setItem(`notification_preferences_${user.id}`, JSON.stringify(updated))
         return updated
       })
+
+      const current = await storage.getItem<NotificationPreferences>(`notification_preferences_${user.id}`)
+      const merged = { ...(current || DEFAULT_PREFERENCES), ...newPreferences, userId: user.id }
+      const success = await storage.setItem(`notification_preferences_${user.id}`, merged)
+      if (!success) {
+        await storage.performMaintenance("local")
+      }
     },
     [user],
   )

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react"
 import { useAuth } from "./auth-context"
+import { StorageManager } from "./utils/storage-manager"
 import { PredictionEngine, type OperationPrediction } from "./ai-predictions"
 import type {
   Task,
@@ -197,19 +198,21 @@ export function StrategicProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [predictionEngine] = useState(() => new PredictionEngine())
+  const storage = StorageManager.getInstance()
 
-  // Load data from localStorage on mount
+  // Load data from storage on mount
   useEffect(() => {
-    if (user) {
-      const savedInitiatives = localStorage.getItem(`initiatives_${user.id}`)
-      const savedOperations = localStorage.getItem(`operations_${user.id}`)
-      const savedActivities = localStorage.getItem(`activities_${user.id}`)
-      const savedTasks = localStorage.getItem(`tasks_${user.id}`)
+    const load = async () => {
+      if (!user) return
+
+      const savedInitiatives = await storage.getItem<any[]>(`initiatives_${user.id}`)
+      const savedOperations = await storage.getItem<any[]>(`operations_${user.id}`)
+      const savedActivities = await storage.getItem<any[]>(`activities_${user.id}`)
+      const savedTasks = await storage.getItem<any[]>(`tasks_${user.id}`)
 
       if (savedInitiatives) {
         try {
-          const loadedInitiatives = JSON.parse(savedInitiatives)
-          const normalizedInitiatives = loadedInitiatives.map((init: any) => ({
+          const normalizedInitiatives = savedInitiatives.map((init: any) => ({
             ...init,
             milestones: init.milestones || [],
             kpis: init.kpis || [],
@@ -225,8 +228,7 @@ export function StrategicProvider({ children }: { children: ReactNode }) {
 
       if (savedOperations) {
         try {
-          const loadedOperations = JSON.parse(savedOperations)
-          const normalizedOperations = loadedOperations.map((op: any) => ({
+          const normalizedOperations = savedOperations.map((op: any) => ({
             ...op,
             statusHistory: op.statusHistory || [{ status: op.status, timestamp: op.createdAt }],
             progressHistory: op.progressHistory || [{ progress: op.progress || 0, timestamp: op.createdAt }],
@@ -242,7 +244,7 @@ export function StrategicProvider({ children }: { children: ReactNode }) {
 
       if (savedActivities) {
         try {
-          setActivities(JSON.parse(savedActivities))
+          setActivities(savedActivities)
         } catch (error) {
           console.error("Error parsing activities:", error)
           setActivities([])
@@ -251,54 +253,64 @@ export function StrategicProvider({ children }: { children: ReactNode }) {
 
       if (savedTasks) {
         try {
-          setTasks(JSON.parse(savedTasks))
+          setTasks(savedTasks)
         } catch (error) {
           console.error("Error parsing tasks:", error)
           setTasks([])
         }
       }
     }
+
+    load()
   }, [user])
 
-  // Save to localStorage whenever data changes
+  // Save to storage whenever data changes
   useEffect(() => {
-    if (user) {
-      try {
-        localStorage.setItem(`initiatives_${user.id}`, JSON.stringify(initiatives))
-      } catch (error) {
-        console.error("Error saving initiatives to localStorage:", error)
+    const save = async () => {
+      if (user) {
+        const success = await storage.setItem(`initiatives_${user.id}`, initiatives)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
       }
     }
+    save()
   }, [initiatives, user])
 
   useEffect(() => {
-    if (user) {
-      try {
-        localStorage.setItem(`operations_${user.id}`, JSON.stringify(operations))
-      } catch (error) {
-        console.error("Error saving operations to localStorage:", error)
+    const save = async () => {
+      if (user) {
+        const success = await storage.setItem(`operations_${user.id}`, operations)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
       }
     }
+    save()
   }, [operations, user])
 
   useEffect(() => {
-    if (user) {
-      try {
-        localStorage.setItem(`activities_${user.id}`, JSON.stringify(activities))
-      } catch (error) {
-        console.error("Error saving activities to localStorage:", error)
+    const save = async () => {
+      if (user) {
+        const success = await storage.setItem(`activities_${user.id}`, activities)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
       }
     }
+    save()
   }, [activities, user])
 
   useEffect(() => {
-    if (user) {
-      try {
-        localStorage.setItem(`tasks_${user.id}`, JSON.stringify(tasks))
-      } catch (error) {
-        console.error("Error saving tasks to localStorage:", error)
+    const save = async () => {
+      if (user) {
+        const success = await storage.setItem(`tasks_${user.id}`, tasks)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
       }
     }
+    save()
   }, [tasks, user])
 
   // Train prediction engine when operations change

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useAuth } from "./auth-context"
+import { StorageManager } from "./utils/storage-manager"
 
 interface BookmarksContextType {
   bookmarkedTemplates: string[] // Array of template IDs
@@ -15,22 +16,32 @@ const BookmarksContext = createContext<BookmarksContextType | undefined>(undefin
 export function BookmarksProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [bookmarkedTemplates, setBookmarkedTemplates] = useState<string[]>([])
+  const storage = StorageManager.getInstance()
 
-  // Load bookmarks from localStorage on mount
+  // Load bookmarks from storage on mount
   useEffect(() => {
-    if (user) {
-      const savedBookmarks = localStorage.getItem(`template-bookmarks-${user.id}`)
-      if (savedBookmarks) {
-        setBookmarkedTemplates(JSON.parse(savedBookmarks))
+    const load = async () => {
+      if (user) {
+        const savedBookmarks = await storage.getItem<string[]>(`template-bookmarks-${user.id}`)
+        if (savedBookmarks) {
+          setBookmarkedTemplates(savedBookmarks)
+        }
       }
     }
+    load()
   }, [user])
 
-  // Save bookmarks to localStorage whenever they change
+  // Save bookmarks to storage whenever they change
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(`template-bookmarks-${user.id}`, JSON.stringify(bookmarkedTemplates))
+    const save = async () => {
+      if (user) {
+        const success = await storage.setItem(`template-bookmarks-${user.id}`, bookmarkedTemplates)
+        if (!success) {
+          await storage.performMaintenance("local")
+        }
+      }
     }
+    save()
   }, [bookmarkedTemplates, user])
 
   const isBookmarked = (templateId: string): boolean => {
