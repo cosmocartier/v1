@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "module": "nodenext",
+    "target": "es2020",
+    "moduleResolution": "node16"
+  },
+  "include": [
+    "lib/utils/password-validation.ts",
+    "__tests__/password-validation.test.ts"
+  ],
+  "exclude": ["node_modules"]
+}
