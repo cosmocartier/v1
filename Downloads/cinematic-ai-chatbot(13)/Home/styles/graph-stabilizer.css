@@ -1,0 +1,115 @@
+/* Graph Stabilization CSS */
+
+/* Prevent layout shifts during graph interactions */
+.graph-container {
+  /* Promote to GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  
+  /* Ensure fixed size to prevent layout shifts */
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  
+  /* Prevent text selection which can cause jitter */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth transitions for hover states */
+.node {
+  transition: opacity 0.15s ease;
+}
+
+/* Ensure smooth transitions for links */
+.links line {
+  transition: opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+/* Ensure text doesn't cause jitter by giving it a fixed position */
+.node text {
+  /* Prevent layout shifts from text rendering */
+  transform: translateZ(0);
+  paint-order: stroke;
+}
+
+/* Ensure zoom controls have a stable position */
+.graph-controls {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 10;
+  transform: translateZ(0);
+}
+
+/* Prevent tooltip jitter */
+.graph-tooltip {
+  position: absolute;
+  pointer-events: none;
+  transform: translateZ(0);
+  z-index: 100;
+}
+
+/* Ensure SVG elements get proper GPU acceleration */
+svg.graph-svg {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Remove pointer events from links to improve performance */
+.links line {
+  pointer-events: none;
+}
+
+/* Create a dedicated layer for performance */
+.gpu-accelerated {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Reduce jitter when switching between component views */
+.graph-wrapper {
+  position: relative;
+  min-height: 600px;
+  height: 100%;
+  display: flex;
+}
+
+/* Ensure panels maintain stable positions */
+.panel-stable {
+  position: relative;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Fix issue with overlapping border causing jitter */
+.border-stable {
+  box-sizing: border-box;
+}
+
+/* Stabilize detail panel sliding transitions */
+.detail-panel {
+  transition: transform 0.2s ease-out;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Ensure buttons don't shift during hover */
+button.stable-button {
+  transform: translateZ(0);
+  position: relative;
+}
+
+/* Prevent unwanted margins causing shifts */
+.no-margin {
+  margin: 0 !important;
+}
+
+/* Add hardware acceleration to modal dialogs */
+.modal-stable {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}

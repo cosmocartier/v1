@@ -1,0 +1,95 @@
+/* Markdown Styles */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-headline {
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.markdown-h1 {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 0.25rem;
+}
+
+.markdown-h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.markdown-h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.markdown-h4 {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+}
+
+.markdown-h5,
+.markdown-h6 {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.markdown-bold {
+  font-weight: 600;
+}
+
+.markdown-italic {
+  font-style: italic;
+}
+
+.markdown-underline {
+  text-decoration: underline;
+}
+
+.markdown-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+  background-color: hsl(var(--muted));
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+}
+
+.markdown-codeblock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+  background-color: hsl(var(--muted));
+  padding: 1em;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.markdown-list {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.markdown-list-item {
+  margin: 0.25em 0;
+}
+
+.markdown-blockquote {
+  border-left: 4px solid hsl(var(--border));
+  padding-left: 1em;
+  font-style: italic;
+  margin: 1em 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.markdown-hr {
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+  margin: 1.5em 0;
+}
+
+.markdown-paragraph {
+  margin: 0.75em 0;
+}
